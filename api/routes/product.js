@@ -7,6 +7,15 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
+// Configure storage
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'bubt-mart',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+  },
+});
+const parser = multer({ storage });
 
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
@@ -51,6 +60,7 @@ const requireAdmin = (req, res, next) => {
 router.post(
   '/add',
   authenticateToken,
+  parser.array('images', 5),
   async (req, res) => {
     try {
       console.log('Product add request received');
@@ -80,12 +90,15 @@ router.post(
           .json({ message: 'All required fields and images are mandatory' });
       }
 
+      const imageUrls = req.files.map((file) => file.path);
+
       const newProduct = new Product({
         title,
         description,
         price,
         category,
         location,
+        images: imageUrls,
         sellerId: req.user.userId, // From JWT
         sellerName,
         sellerVarsityId,
